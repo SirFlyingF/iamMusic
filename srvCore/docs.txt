@@ -1,0 +1,41 @@
+
+@app.route('/', methods=['GET'])
+# Landing page
+# Returns Response("Landing", status=200)
+
+@app.route('/play/<int:song_id>', methods=['GET'])
+# Starts an audio stream
+# Returns Response(stream(), mimetype="audio/mpeg")
+
+
+@app.route('/songs', methods=['GET'])
+# Returns a list of all songs
+# Sorted by Album, Track number. Album name is json keys  
+
+
+@app.route('/songs', methods=['POST'])
+# Takes the .mp3 file and extracts metadata.
+# Saves file in File System and metadata in SQL
+# requires <input name = 'file'>
+# Returns "Success", status=200
+
+
+@app.route('/playlists', methods=['GET'])
+# Returns all playlists created by user
+# Also Returns song_ids and metadata
+
+
+@app.route('/playlists', methods=['POST'])
+# Creates Playlists
+# Accepts a json { songs : [song_id], name : str }
+# Returns a playlist_id on success
+
+
+@app.route('/playlists', methods=['PATCH'])
+# Modifies an existing playlist
+Returns status 200 on success
+
+
+@app.route('/playlists', methods=['DELETE'])
+# Deletes a playlist
+# Returns status 200 on success
