@@ -1,11 +1,15 @@
 from srvCore import app
-from srvCore.Playlist import Playlist
-from srvCore.Song import Song
-
 from flask import request, Response
 
 from Commons.models import *
 from Commons.database import session
+
+from base64 import b64encode, b64decode
+from mutagen.id3 import ID3, APIC
+import os
+
+from srvCore.SongAPI import SongAPI
+from srvCore.PlaylistAPI import PlaylistAPI
 
 
 '''
@@ -19,10 +23,10 @@ TODO
 # passed the exception triggering the teardown, or a placeholder.
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    session.remove()
+    session.remove() 
 
-@app.route('/play/<int:song_id>', methods=['GET'])
 # Starts an audio stream
+@app.route('/play/<int:song_id>', methods=['GET'])
 def play(song_id):
     path = session.query(Song)\
                   .filter(
@@ -33,13 +37,25 @@ def play(song_id):
             data = fmpeg.read(1024)
             while data:
                 yield data
-                data = fmp3.read(1024)
-    return Response(stream(), mimetype="audio/mpeg")
+                data = fmpeg.read(1024)
+    return Response(stream(), mimetype="audio/mpeg")  
 
-@app.route('/song')
-def song():
-    return Song.dispatch(request)
+@app.route('/song', methods=['POST', 'GET'])
+def DispatchSongAPI():
+    API = SongAPI(request)
+    match request.method:
+        case 'POST':
+            return API.AddSong()
+        case 'GET':
+            return API.GetSongs()
+        
+    return Response("Invalid Request", status=404)
 
 @app.route('/playlist')
 def playlist():
-    return Playlist.dispatch(request)
+    API = SongAPI(request)
+    match request.method:
+        case 'POST':
+            return API.AddSong()
+        case 'GET':
+            return API.GetSongs()
