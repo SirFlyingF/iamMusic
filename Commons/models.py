@@ -21,9 +21,6 @@ class Song(Base):
     album_artist = Column(String(64))
     #_playlists = relationship('Playlist', secondary=PlaylistSongReltn, backref='Song')
 
-    def __init__(self):
-        super().__init__()
-
     def __init__(self, metadata):
         super().__init__()
         self.title = metadata['title'],
@@ -60,7 +57,5 @@ class Playlist(Base):
     __tablename__ = 'playlist'
     playlist_id = Column(Integer, primary_key=True)
     name = Column(String(256))
-    #_songs = relationship('Song', secondary=PlaylistSongReltn, backref='Playlist')
+    _songs = relationship('Song', secondary=PlaylistSongReltn.__tablename__, backref='Playlist')
 
-    def __init__(self):
-        super().__init__()

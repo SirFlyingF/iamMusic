@@ -18,7 +18,7 @@ class SongAPI:
     def _ismp3(self, filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower()=='mp3'
 
-    def _register_API_hit(self):
+    def _register_API_hit(self, endpoint):
         pass
 
     def _validate_request(self, endpoint):
@@ -29,10 +29,10 @@ class SongAPI:
                     return False, "AddSong - Invalid file or filename", 400
                 if not self._ismp3(file.filename):
                     return False, "AddSong - File type is not mp3", 400
-                return True, "", ""
+                return True, "", 200
 
             case 'GetSongs':
-                return True, "", ""
+                return True, "", 200
             case 'SchSong':
                 pass
 
@@ -95,12 +95,12 @@ class SongAPI:
     # Saves file in File System and metadata in SQL
     def AddSong(self):
         endpoint = 'AddSong'
-        try:   
-            valid, msg, http_code = self._validate_request(endpoint)
-            if not valid:
-                return Response(msg, status=http_code)
-            #self._register_API_hit(endpoint, request)
+        valid, msg, http_code = self._validate_request(endpoint)
+        if not valid:
+            return Response(msg, status=http_code)
+        self._register_API_hit(endpoint)
 
+        try:   
             file = self.request.files.get('file')
             metadata = self._extract_metadata(file, self.request.form)
 
@@ -131,36 +131,37 @@ class SongAPI:
     # Sorted by Album, Track number
     def GetSongs(self):
         endpoint = 'GetSongs'
- 
         valid, msg, http_code = self._validate_request(endpoint)
         if not valid:
             return Response(msg, status=http_code)
-        #self._register_API_hit(endpoint)
+        self._register_API_hit(endpoint)
 
-        songs = session.query(Song)\
-                    .order_by(Song.album_artist)\
-                    .order_by(Song.album)\
-                    .order_by(Song.track_num)\
-                    .all()
+        try:
+            songs = session.query(Song)\
+                        .order_by(Song.album_artist)\
+                        .order_by(Song.album)\
+                        .order_by(Song.track_num)\
+                        .all()
 
-        response = {}
-        for song in songs:
-            if song.album in response:
-                response[song.album]['album_artist'] = song.album_artist
-                response[song.album]['songs'].append(song.__serial__())
-            else: #if song.album not in response:
-                response[song.album] = {}
-                response[song.album]['songs'] = []
-                response[song.album]['album_artist'] = song.album_artist
-                response[song.album]['songs'].append(song.__serial__())
+            response = {}
+            for song in songs:
+                if song.album in response:
+                    response[song.album]['album_artist'] = song.album_artist
+                    response[song.album]['songs'].append(song.__serial__())
+                else: #if song.album not in response:
+                    response[song.album] = {}
+                    response[song.album]['songs'] = []
+                    response[song.album]['album_artist'] = song.album_artist
+                    response[song.album]['songs'].append(song.__serial__())
 
-                # Consider storing base64 encoded artwork in SQL table
-                #audio = ID3(song.path) 
-                #if 'APIC' not in audio:
-                #    response[song.album]['artwork'] = None
-                #else:
-                #    artwork = audio['APIC'] 
-                #    # t = {'b64':b64encode(bytes(artwork.data)).decode(), 'mime':artwork.mime}
-                #    response[song.album_name]['artwork'] = {'img' : artwork.data, 'mime' : artwork.mime}
-
+                    # Consider storing base64 encoded artwork in SQL table
+                    #audio = ID3(song.path) 
+                    #if 'APIC' not in audio:
+                    #    response[song.album]['artwork'] = None
+                    #else:
+                    #    artwork = audio['APIC'] 
+                    #    # t = {'b64':b64encode(bytes(artwork.data)).decode(), 'mime':artwork.mime}
+                    #    response[song.album_name]['artwork'] = {'img' : artwork.data, 'mime' : artwork.mime}
+        except Exception as e:
+            return Response("Internal Server Error", status=500)
         return jsonify(response)  

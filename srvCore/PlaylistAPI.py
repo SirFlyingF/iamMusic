@@ -1,60 +1,98 @@
 from flask import jsonify, request, Response
 
-from Commons.models import *
+from Commons.models import Playlist, PlaylistSongReltn
 from Commons.database import session
 
 
-class Playlist():
-    def __init__(self):
+class PlaylistAPI():
+    def __init__(self, request):
+        self.request = request
+
+    def _register_API_hit(self, endpoint):
         return 0
 
-    def dispatch(self, request):
-        match (request.method):
-            case 'GET':
-                return GetPlaylists(request)
-            case 'POST', 'PUT':
-                return AddPlaylists(request)
-            case 'PATCH':
-                return ModifyPlaylists(request)
-            case "DELETE":
-                return RemovePlaylists(request)  
-        return Response("Invalid request", status=400)
+    def _validate_request(self, endpoint):
+        match endpoint:
+            case 'GetPlaylists':
+                return True, "", 200
+            
+            case 'AddPlaylist':
+                json = self.request.json
+                if json is None:
+                    return False, "No json", 400
+                # Songs is a list of song_ids and name is the name of PL
+                if {'songs', 'name'} < json.keys():
+                    return False, "Invalid Request", 400
+                return True, "", 200
+            
+            case 'ModifyPlaylist':
+                json = self.request.json
+                if json is None:
+                    return False, "No json", 400
+                # Playlist_id to denote what playlist to modify
+                # add and rmv are list of song_ids to add or remove
+                # nname is the new name of the playlist. Request must contain atleast one
+                if ('playlist_id' not in json) or ('add' not in json and 'rmv' not in json and 'nname' not in json):
+                    return False, "Invalid Request", 400
+                return True, "", 200
+            
+            case 'RemovePlaylist':
+                json = self.request.json
+                if json is None:
+                    return False, "No json", 400
+                if 'playlist_id' not in json.keys():
+                    return False, "Invalid Request", 400
+                return True, "", 200
 
+        return False, "Internal Server Error", 500
+    
 
     # Returns all playlists created by user
     # Also return song_ids and metadata
-    def GetPlaylists():
-        playlists = session.query(Playlist).all()
-        response = {}
-        for playlist in playlists:
-            response[playlist.name] = []
-            songs = playlist._songs
-            for song in songs:
-                response[playlist.name].append(song.__serial__())
+    def GetPlaylists(self):
+        endpoint = 'GetPlaylists'
+        self._register_API_hit(endpoint)
+
+        try:
+            playlists = session.query(Playlist).all()
+            response = {}
+            for playlist in playlists:
+                response[playlist.name] = []
+                songs = playlist._songs
+                for song in songs:
+                    response[playlist.name].append(song.__serial__())
+        except Exception as e:
+            return Response("Internal Server Error", status=500)
         return jsonify(response)
-
-
 
     # Creates Playlists
     # Accepts a json { songs : [song_id], name : str }
     # Returns a playlist_id on success
-    def AddPlaylists(request):
-        json = request.json
-        try:
-            if json is None:
-                raise KeyError
-            if {'songs', 'name'} >= json.keys():
-                raise KeyError
-        except KeyError:
-            return Response("Invalid Request", status=400)
+    def AddPlaylist(self):
+        endpoint = 'AddPlaylist'
+        valid, msg, http_code = self._validate_request(endpoint)
+        if not valid:
+            return Response(msg, status=http_code)
+        
+        self._register_API_hit()
+        
+        json = self.request.json
+        try: 
+            # Check if Playlist already exisits. 
+            PL = session.query(Playlist).filter(Playlist.name==json['name']).all()
+            for playlist in PL:
+                if playlist.name == json['name']:
+                    song_ls = [s.song_id for s in playlist._songs]
+                    if song_ls == json['songs']:
+                        return Response("Playlist already exists", status=200)
 
-        try:
             # Need to manually add psr row, since we dont want
-            # to insert in Song table.
-            playlist = Playlist(
-                            name = json['name']
-                        )
+            # to insert in Song table using Cascaded inserts
+            playlist = Playlist(name=json['name'])
             session.add(playlist)
+            session.flush()
+
+            # Add songs to playlist
             for song_id in json['songs']:
                 psr = PlaylistSongReltn(
                                 playlist_id = playlist.playlist_id,
@@ -62,83 +100,83 @@ class Playlist():
                             )
                 session.add(psr)
             session.commit()
-        except e:
+        except Exception as e:
             session.rollback()
-            return Response("Internal Server Error", status=500)
+            return Response("Internal Server Error"+str(e), status=500)
 
-        return Response(jsonify({'playlist_id': playlist_id}), status=200)
-
+        return jsonify({'playlist_id': playlist.playlist_id}), 200
 
 
     # Modifies an existing playlist
     # Accepts json {playlist_id:int, nname:str, add:[song_id], rmv:[song_id]}
     # Returns status 200 on success
-    def ModifyPlaylists(request):
+    def ModifyPlaylist(self):
+        endpoint = 'ModifyPlaylist'
+        valid, msg, http_code = self._validate_request(endpoint)
+        if not valid:
+            return Response(msg, status=http_code)
+
+        self._register_API_hit(endpoint)
+
         json = request.json
         try:
-            if json is None:
-                raise KeyError
-            if {'playlist_id', 'add', 'rmv'} >= json.keys():
-                raise KeyError
-        except KeyError:
-            return Response("Invalid Request", status=400)
-
-        try:
-            # .one() may throw NoResultFound error
-            playlist = session.query(Playlist).one(json['playlist_id'])
+            playlist = session.query(Playlist).get(json['playlist_id'])
+            if not playlist:
+                return Response("Playlist does not exist", status=404)
+            
+            # if new name is supplied, set it as new name of the playlist.
             if 'nname' in json:
-                playlist.name = json['nname']
+                if json['nname']:
+                    playlist.name = json['nname']
 
             # Add songs to playlist
-            for song_id in json['add']:
-                psr = PlaylistSongReltn(
-                            playlist_id = playlist.playlist_id,
-                            song_id = song_id,
-                        )
-                session.add(psr)
+            if 'add' in json:
+                for song_id in json['add']:
+                    psr = PlaylistSongReltn(
+                                playlist_id = playlist.playlist_id,
+                                song_id = song_id,
+                            )
+                    session.add(psr)
 
             # Remove songs from playlist
-            q = session.query(PlaylistSongReltn)
-            for song_id in json['rmv']:
-                q = q.filter(
-                        PlaylistSongReltn.song_id == song_id
-                    )
-            q.delete()
+            if 'rmv' in json:
+                q = session.query(PlaylistSongReltn)
+                for song_id in json['rmv']:
+                    q = q.filter(
+                            PlaylistSongReltn.song_id==song_id
+                        )
+                q.delete()
 
             session.commit()
-        except e:
+        except Exception as e:
             session.rollback()
             return Response("Internal Server Error", status=500)
 
         return Response("Success", status=200)
 
 
-
     # Deletes a playlist
     # Returns status 200 on success
-    def RemovePlaylists(request):
+    def RemovePlaylist(self):
+        endpoint = 'RemovePlaylist'
+        valid, msg, http_code = self._validate_request(endpoint)
+        if not valid:
+            return Response(msg, status=http_code)
+
+        self._register_API_hit(endpoint)
+
         json = request.json
         try:
-            if json is None:
-                raise KeyError
-            if not 'playlist_id' in json.keys():
-                raise KeyError
-        except KeyError:
-            return Response("Invalid Request", status=400)
-
-        try:
-            session.query(PlaylistSongReltn)\
-                    .filter(
-                        PlaylistSongReltn.playlist == json['playlist_id']
+            session.query(PlaylistSongReltn).filter(
+                        PlaylistSongReltn.playlist_id == json['playlist_id']
                     ).delete()
                     
-            session.query(Playlist)\
-                    .filter(
+            session.query(Playlist).filter(
                         Playlist.playlist_id == json['playlist_id']
                     ).delete()
 
             session.commit()
-        except e:
+        except Exception as e:
             session.rollback()
             return Response("Internal Server Error", status=500)
 

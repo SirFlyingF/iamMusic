@@ -14,7 +14,12 @@ from srvCore.PlaylistAPI import PlaylistAPI
 
 '''
 TODO
-#
+# Implement SearchSong handler
+# Implement app factory - Prod, Test, Debug
+# Implement Logging
+# Implement API hit counter
+# Add support for seek
+# Add support for Album Artwork
 '''
 
 # This decorator adds the function you decorate with it to a list of functions
@@ -49,13 +54,19 @@ def DispatchSongAPI():
         case 'GET':
             return API.GetSongs()
         
-    return Response("Invalid Request", status=404)
+    return Response("Resource Not Found", status=404)
 
-@app.route('/playlist')
-def playlist():
-    API = SongAPI(request)
+@app.route('/playlist', methods=['POST', 'GET', 'PATCH', 'DELETE'])
+def DispatchPlaylistAPI():
+    API = PlaylistAPI(request)
     match request.method:
-        case 'POST':
-            return API.AddSong()
         case 'GET':
-            return API.GetSongs()
+            return API.GetPlaylists()
+        case 'POST':
+            return API.AddPlaylist()
+        case 'PATCH':
+            return API.ModifyPlaylist()
+        case "DELETE":
+            return API.RemovePlaylist() 
+        
+    return Response("Resource Not Found", status=404)
