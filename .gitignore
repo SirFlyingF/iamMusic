@@ -1,0 +1,8 @@
+# Ignore MacOS files
+.DS_store
+
+# Ignore Python venv
+/venv
+
+# Ignore Config files
+# .cnf or .env
