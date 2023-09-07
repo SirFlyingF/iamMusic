@@ -64,7 +64,7 @@ class PlaylistAPI():
 
         try:
             if playlist_id == 0:
-                playlist_id = args.get('playlist_id')
+                playlist_id = self.request.args.get('playlist_id')
 
             playlist = session.query(Playlist).get(playlist_id)
             

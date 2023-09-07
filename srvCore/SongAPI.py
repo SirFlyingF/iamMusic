@@ -32,9 +32,9 @@ class SongAPI:
                 return True, "", 200
 
             case 'GetSong':
-                if not self.request.query_string or self.request.query_tring == "":
+                if not self.request.query_string or self.request.query_string == "":
                     return False, "No Query String", 400
-                if 'song_id' in self.request.args:
+                if 'song_id' not in self.request.args:
                     return False, "No Query String", 400
                 return True, "", 200
 
@@ -120,6 +120,15 @@ class SongAPI:
             session.add(song)
             session.flush()
             session.commit()
+
+            # Consider storing base64 encoded artwork in SQL table
+            #audio = ID3(song.path) 
+            #if 'APIC' not in audio:
+            #    response[song.album]['artwork'] = None
+            #else:
+            #    artwork = audio['APIC'] 
+            #    # t = {'b64':b64encode(bytes(artwork.data)).decode(), 'mime':artwork.mime}
+            #    response[song.album_name]['artwork'] = {'img' : artwork.data, 'mime' : artwork.mime}
         except OSError:
             session.rollback()
             return Response("Error saving file", status=500)
@@ -142,7 +151,7 @@ class SongAPI:
 
         try:
             if song_id == 0:
-                song_id = args.get('song_id')
+                song_id = self.request.args.get('song_id')
 
             song = session.query(Song).get(song_id)
             

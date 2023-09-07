@@ -15,9 +15,8 @@ from srvCore.SearchAPI import SearchAPI
 
 '''
 TODO
-# OpenAPI
+# Write OpenAPI document
 # Format search-by-artist response
-# Implement search value 'all'
 # Implement app factory - Prod, Test, Debug
 # Implement Logging
 # Implement API hit counter
