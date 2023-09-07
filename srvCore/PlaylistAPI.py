@@ -1,6 +1,6 @@
 from flask import jsonify, request, Response
 
-from Commons.models import Playlist, PlaylistSongReltn
+from Commons.models import Playlist, PlaylistSongReltn, Song
 from Commons.database import session
 
 
@@ -13,7 +13,11 @@ class PlaylistAPI():
 
     def _validate_request(self, endpoint):
         match endpoint:
-            case 'GetPlaylists':
+            case 'GetPlaylist':
+                if not self.request.query_string or self.request.query_string == "":
+                    return False, "No Query String", 400
+                if 'playlist_id' not in self.request.args:
+                    return False, "No Query String", 400
                 return True, "", 200
             
             case 'AddPlaylist':
@@ -47,22 +51,32 @@ class PlaylistAPI():
         return False, "Internal Server Error", 500
     
 
-    # Returns all playlists created by user
-    # Also return song_ids and metadata
-    def GetPlaylists(self):
-        endpoint = 'GetPlaylists'
+    # Returns playlist details by playlist_id
+    def GetPlaylist(self, playlist_id=0):
+        endpoint = 'GetPlaylist'
+
+        if playlist_id == 0:
+            # check if query string has song_id
+            valid, msg, http_code = self._validate_request(endpoint)
+            if not valid:
+                return Response(msg, status=http_code)   
         self._register_API_hit(endpoint)
 
         try:
-            playlists = session.query(Playlist).all()
-            response = {}
-            for playlist in playlists:
-                response[playlist.name] = []
-                songs = playlist._songs
-                for song in songs:
-                    response[playlist.name].append(song.__serial__())
+            if playlist_id == 0:
+                playlist_id = args.get('playlist_id')
+
+            playlist = session.query(Playlist).get(playlist_id)
+            
+            response = {'data' : {}}
+            response['data']['name'] = playlist.name
+            response['data']['playlist_id'] = playlist.playlist_id
+            response['data']['songs'] = []
+            for song in playlist._songs:
+                response['data']['songs'].append(session.query(Song).get(song.song_id).__serial__())
         except Exception as e:
             return Response("Internal Server Error", status=500)
+        
         return jsonify(response)
 
     # Creates Playlists

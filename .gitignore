@@ -1,8 +1,11 @@
 # Ignore MacOS files
-.DS_store
+/.DS_store
 
 # Ignore Python venv
-/venv
+venv
+
+# Ignore audio test audio files
+/.mp3
 
 # Ignore Config files
 # .cnf or .env

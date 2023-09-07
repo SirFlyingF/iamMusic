@@ -10,7 +10,7 @@ from mutagen.id3 import ID3, APIC
 import os
 
 class SongAPI:
-    endpoints = ['AddSong', 'GetSongs', 'SchSong']
+    endpoints = ['AddSong', 'GetSong']
 
     def __init__(self, request):
         self.request = request
@@ -31,10 +31,12 @@ class SongAPI:
                     return False, "AddSong - File type is not mp3", 400
                 return True, "", 200
 
-            case 'GetSongs':
+            case 'GetSong':
+                if not self.request.query_string or self.request.query_tring == "":
+                    return False, "No Query String", 400
+                if 'song_id' in self.request.args:
+                    return False, "No Query String", 400
                 return True, "", 200
-            case 'SchSong':
-                pass
 
         return False
 
@@ -90,6 +92,7 @@ class SongAPI:
             return metadata
         except KeyError:
             return None
+        
 
     # Takes the .mp3 file and extracts metadata.
     # Saves file in File System and metadata in SQL
@@ -127,41 +130,24 @@ class SongAPI:
         return Response("Success", status=200)
 
 
-    # Returns a list of all songs
-    # Sorted by Album, Track number
-    def GetSongs(self):
-        endpoint = 'GetSongs'
-        valid, msg, http_code = self._validate_request(endpoint)
-        if not valid:
-            return Response(msg, status=http_code)
+    # Returns song details by song_id
+    def GetSong(self, song_id=0):
+        endpoint = 'GetSong'
+        if song_id == 0:
+            # check if query string has song_id
+            valid, msg, http_code = self._validate_request(endpoint)
+            if not valid:
+                return Response(msg, status=http_code)
         self._register_API_hit(endpoint)
 
         try:
-            songs = session.query(Song)\
-                        .order_by(Song.album_artist)\
-                        .order_by(Song.album)\
-                        .order_by(Song.track_num)\
-                        .all()
+            if song_id == 0:
+                song_id = args.get('song_id')
 
-            response = {}
-            for song in songs:
-                if song.album in response:
-                    response[song.album]['album_artist'] = song.album_artist
-                    response[song.album]['songs'].append(song.__serial__())
-                else: #if song.album not in response:
-                    response[song.album] = {}
-                    response[song.album]['songs'] = []
-                    response[song.album]['album_artist'] = song.album_artist
-                    response[song.album]['songs'].append(song.__serial__())
-
-                    # Consider storing base64 encoded artwork in SQL table
-                    #audio = ID3(song.path) 
-                    #if 'APIC' not in audio:
-                    #    response[song.album]['artwork'] = None
-                    #else:
-                    #    artwork = audio['APIC'] 
-                    #    # t = {'b64':b64encode(bytes(artwork.data)).decode(), 'mime':artwork.mime}
-                    #    response[song.album_name]['artwork'] = {'img' : artwork.data, 'mime' : artwork.mime}
+            song = session.query(Song).get(song_id)
+            
+            response = {'data' : song.__serial__()} 
         except Exception as e:
             return Response("Internal Server Error", status=500)
+        
         return jsonify(response)  

@@ -36,8 +36,10 @@ class Song(Base):
         dict['song_id'] = self.song_id 
         dict['title'] = self.title
         dict['song_artist'] = self.song_artist
-        dict['duration'] = self.duration 
-        dict['track_num'] = self.track_num
+        dict['duration'] = self.duration
+        dict['track_num'] = self.track_num,
+        dict['album'] = self.album,
+        dict['album_artist'] = self.album_artist
         return dict
 
 
@@ -58,4 +60,10 @@ class Playlist(Base):
     playlist_id = Column(Integer, primary_key=True)
     name = Column(String(256))
     _songs = relationship('Song', secondary=PlaylistSongReltn.__tablename__, backref='Playlist')
+
+    def __serial__(self):
+        dict = {}
+        dict['playlist_id'] = self.playlist_id 
+        dict['name'] = self.name
+        return dict
 
