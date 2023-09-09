@@ -98,7 +98,7 @@ class PlaylistAPI():
                 if playlist.name == json['name']:
                     song_ls = [s.song_id for s in playlist._songs]
                     if song_ls == json['songs']:
-                        return Response("Playlist already exists", status=200)
+                        return jsonify({'playlist_id': playlist.playlist_id}), 409
 
             # Need to manually add psr row, since we dont want
             # to insert in Song table using Cascaded inserts

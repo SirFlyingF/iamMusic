@@ -36,6 +36,9 @@ def shutdown_session(exception=None):
 # Starts an audio stream
 @app.route('/play/<int:song_id>', methods=['GET'])
 def play(song_id):
+    if not song_id:
+        return Response("No song_id", status=400)
+    
     path = session.query(Song)\
                   .filter(
                         Song.song_id==song_id,

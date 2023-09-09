@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: iamMusic API Reference
+  description: |-
+    iamMusic is a audio streaming web app concieved out of the need to store my music library remotely to free up storage on my phone - and not pay for spotify - and still be ad free.
+    
+    Some useful links:
+    - [iamMusic Github Repository](https://github.com/SirFlyingF/iamMusic)
+    - [Are you a recruiter](https://linkedin.com/in/sharma-kabir)
+  contact:
+    email: kabirsharma2905@gmailcom
+  version: 1.0.3
+paths:
+  /song:
+    post:
+      summary: Upload a song to library
+      description: Some of the song's metadata may be taken from ID3 tags of the mp3 file.
+      operationId: AddSong
+      requestBody:
+        description: Upload a song to library
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  description: If not provided in form, will take from filename. ID3 tag wil NOT be read for song title.
+                album:
+                  type: string
+                  description: If not provided in form and ID3 tag, will default to 'Unknown Album'
+                album_artist:
+                  type: string
+                  description: If not provided in form and ID3 tag, will default to 'Unknown Artist'
+                song_artist:
+                  type: string
+                  description: Song artists are treated differently from album artists to allow for song collaboration, or compilation albums. Use comma separated artists if multiple, or use 'ft' keyword.
+                track_num:
+                  type: integer
+                duration:
+                  type: integer
+                  description: Needed for seek operation, currently unsupported. Hence duration is optional for now. Can be sent in ID3 tag or form. If not calculable from the file, will throw error when seek operation is supported.
+            encoding:
+              file:
+                contentType: audio/mpeg
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Success"
+        '500':
+          description: Unsuccessful Operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "AddSong - Invalid file or filename"
+    get:
+      summary: Gets the song by song_id
+      description: Can accespt song_id as query_params OR full path. This path describes query params. Priority is given to path parameter if both supplied.
+      operationId: GetSongQuery
+      parameters:
+        - name: song_id
+          in: query
+          description: song_id of the song whose details are needed
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  song_id:
+                    type: integer
+                  title:
+                    type: string
+                  album:
+                    type: string
+                  album_artist:
+                    type: string
+                  song_artist:
+                    type: string
+                  track_num:
+                    type: integer
+                  duration:
+                    type: integer
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "No Query String"
+                
+  /song/{song_id}:
+    get:
+      summary: Gets the song by song_id
+      description: Can accespt song_id as query_params OR full path. This path describes path. Priority is given to path parameter if both supplied.
+      operationId: GetSongPath
+      parameters:
+        - name: song_id
+          in: path
+          description: song_id of the song whose details are needed
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  song_id:
+                    type: integer
+                  title:
+                    type: string
+                  album:
+                    type: string
+                  album_artist:
+                    type: string
+                  song_artist:
+                    type: string
+                  track_num:
+                    type: integer
+                  duration:
+                    type: integer
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "No Query String"
+  
+  /playlist:
+      get:
+      summary: Gets the playlist by playlist_id
+      description: Can accespt playlist_id as query_params OR full path. This path describes query. Priority is given to path parameter if both supplied.
+      operationId: GetPlaylistQuery
+      parameters:
+        - name: playlist_id
+          in: query
+          description: playlist_id of the song whose details are needed
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                description: the entire properties section is enclosed in a key 'data' in the json response
+                properties:
+                  name:
+                    type: string
+                  playlist_id: 
+                    type: integer
+                  song:
+                    type: array
+                    items:
+                      $ref: 
+                    description: array of song object
+        '400':
+          description: invalid request
+          content: 
+            text/plain:
+              schema:
+                type: string
+                example": "No query string"
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+      post:
+        summary: Create a playlist
+        description: Create a new playlist
+        operationId: AddPlaylist
+        requestBody:
+          description: Create a new playlist
+          content:
+            application/json:
+              schema:
+                required:
+                  - songs
+                  - name
+                type: object
+                properties:
+                  name: 
+                    type: string
+                    description: name of the playlist to be created
+                  songs:
+                    type: array
+                    items:
+                      $ref: 
+                    description: array of song_ids
+          required: true
+        responses:
+          '200':
+            description: Successful operation
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    playlist_id:
+                      type: integer
+                      description: pk id of the new playlist created
+          '400':
+            description: Invalid request
+            content:
+              text/plain:
+                schema:
+                  type: string
+                  example: "Invalid Request"
+          '409':
+            description: Playlist already exists. Playlist is considered already existig if there is a match on name of the playlist and also the list of songs it contains.
+            content:
+              application/json:
+                schema:
+                  type: integer
+                  description: pk id of the already exisitng playlist
+          '500':
+            description: Unsuccessful Operation
+            content:
+              text/plain:
+                schema:
+                  type: string
+                  example: "Internal Server Error"
+    patch:
+    
+    delete:
+  
+  /playlist/{playlist_id}:
+    get:
+      summary: Gets the playlist by playlist_id
+      description: Can accespt playlist_id as query_params OR full path. This path describes path. Priority is given to path parameter if both supplied.
+      operationId: GetPlaylistPath
+      parameters:
+        - name: playlist_id
+          in: path
+          description: playlist_id of the song whose details are needed
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                description: the entire properties section is enclosed in a key 'data' in the json response
+                properties:
+                  name:
+                    type: string
+                  playlist_id: 
+                    type: integer
+                  song:
+                    type: array
+                    $ref: 
+                    description: array of song object
+        '400':
+          description: invalid request
+          content: 
+            text/plain:
+              schema:
+                type: string
+                example": "No query string"
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+  /play/{song_id}:
+    get:
+      description: Starts an audio stream
+      operationId: Play
+      paramters:
+        - song_id:
+          in: path
+          description: pk id of the song to stream
+      responses:
+        '400':
+          description: if song_id is not provided. Starts an audio stream otherwise.
+    
+  /search/{entity}/{value}:
+    get:
+      description: Search for an entity. Can be songs, album, artists. Can search by name or 'all' keyword. This path describes path params. Also accepts query params. If both passed, priority given to path.
+      operationId: Search
+      parameters:
+        - entity:
+        in: path
+        type: integer
+        required: true
+        description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
+        - value:
+          in: path
+          type: string
+          description: search string. Defaults to 'all'
+          example: 'all'
+      responses:
+        '200':
+          description: json response structures are different based on entity provided.
+          content:
+            application/json:
+              $ref:
+            applicationjson:
+              $ref:
+            application/json:
+              $ref:
+            application/json:
+              $ref:
+        '400':
+          description: invalid request
+          content: 
+            text/plain:
+              schema:
+                type: string
+                example": "Invalid request"
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+  /search:
+    get:
+      description: Search for an entity. Can be songs, album, artists. Can search by name or 'all' keyword. This path describes query params. Also accepts path params. If both passed, priority given to path.
+      operationId: Search
+      parameters:
+        - entity:
+        in: query
+        type: integer
+        required: true
+        description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
+        - value:
+          in: query
+          type: string
+          description: search string. Defaults to 'all'
+          example: 'all'
+      responses:
+        '200':
+          description: json response structures are different based on entity provided.
+          content:
+            application/json:
+              $ref:
+            applicationjson:
+              $ref:
+            application/json:
+              $ref:
+            application/json:
+              $ref:
+        '400':
+          description: invalid request
+          content: 
+            text/plain:
+              schema:
+                type: string
+                example": "Invalid request"
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+components:
+  
