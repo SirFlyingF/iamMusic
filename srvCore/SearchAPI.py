@@ -58,15 +58,17 @@ class SearchAPI:
             match entity:
                 case 'playlist':
                     q = session.query(Playlist)
-                    q = q.filter(
-                            Playlist.name.like(f"{value}%")
-                        )
+                    if value != 'all':
+                        q = q.filter(
+                                Playlist.name.like(f"{value}%")
+                            )
                     result = q.all()
                     response = {'data': [pl.__serial__() for pl in result]}
 
                 case 'album':
                     q = session.query(Song)
-                    q = q.filter(Song.album.like(f"{value}%"))
+                    if value != 'all':
+                        q = q.filter(Song.album.like(f"{value}%"))
                     q = q.order_by(Song.track_num)
                     result = q.all()
                     response = {}
@@ -81,13 +83,14 @@ class SearchAPI:
                     q = session.query(Song)
                     # since song_artist is defaulted from album, if blank, we will skip
                     # searching by album_artist
-                    q = q.filter(
-                            or_(
-                                Song.song_artist.like(f"{value}%"),
-                                Song.song_artist.like(f"%,_{value}%"),
-                                Song.song_artist.like(f"%ft_{value}%")
-                            )
-                        ).order_by(Song.track_num)
+                    if value != 'all':
+                        q = q.filter(
+                                or_(
+                                    Song.song_artist.like(f"{value}%"),
+                                    Song.song_artist.like(f"%,_{value}%"),
+                                    Song.song_artist.like(f"%ft_{value}%")
+                                )
+                            ).order_by(Song.track_num)
                     result = q.all()
 
                     response = {}
@@ -98,7 +101,8 @@ class SearchAPI:
 
                 case 'title':
                     q = session.query(Song)
-                    q = q.filter(Song.title.like(f"{value}%"))
+                    if value != 'all':
+                        q = q.filter(Song.title.like(f"{value}%"))
                     result = q.all()
                     response = {'data': [song.__serial__() for song in result]}
 
