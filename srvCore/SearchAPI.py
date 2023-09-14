@@ -69,21 +69,20 @@ class SearchAPI:
                     q = q.filter(Song.album.like(f"{value}%"))
                     q = q.order_by(Song.track_num)
                     result = q.all()
-
-                    response = {'data':{}}
+                    response = {}
                     for song in result:
-                        if song.album not in response['data']:
-                            response['data'][song.album] = []
-                        response['data'][song.album].append(song.__serial__())
+                        if song.album not in response:
+                            response[song.album] = []
+                        response[song.album].append(song.__serial__())
 
                 case 'artist':
-                    # Consider comma separated multiple
-                    # song artists and 'ft' artists.
+                    # Consider comma separated multiple song artists and 'ft' artists.
                     # %song_artist% is avoided as meaningless superstrings will also qualify
                     q = session.query(Song)
+                    # since song_artist is defaulted from album, if blank, we will skip
+                    # searching by album_artist
                     q = q.filter(
                             or_(
-                                Song.album_artist.like(f"{value}%"),
                                 Song.song_artist.like(f"{value}%"),
                                 Song.song_artist.like(f"%,_{value}%"),
                                 Song.song_artist.like(f"%ft_{value}%")
@@ -91,9 +90,11 @@ class SearchAPI:
                         ).order_by(Song.track_num)
                     result = q.all()
 
-                    response = {'data': []}
+                    response = {}
                     for song in result:
-                        response['data'].append(song.__serial__())
+                        if song.song_artist not in response:
+                            response[song.song_artist] = []
+                        response[song.song_artist].append(song.__serial__())
 
                 case 'title':
                     q = session.query(Song)
