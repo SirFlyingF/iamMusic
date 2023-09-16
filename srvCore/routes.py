@@ -51,6 +51,9 @@ def play(song_id):
                 data = fmpeg.read(1024)
     return Response(stream(), mimetype="audio/mpeg")  
 
+@app.route('/')
+def pinf():
+    return Response("Hello World!", status=200)
 
 @app.route('/song/<int:song_id>', methods=['GET'])
 @app.route('/song', methods=['POST', 'GET'])

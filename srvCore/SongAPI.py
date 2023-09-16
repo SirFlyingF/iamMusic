@@ -110,13 +110,13 @@ class SongAPI:
             if not metadata:
                 return Response("Error extracting metadata", status=400)
 
+            # Create directories before appending filename to path
             os.makedirs(metadata['path'], 0o777, exist_ok=True)
-            path = os.path.join(metadata['path'], file.filename)
-            file.save(path)
+            metadata['path'] = os.path.join(metadata['path'], file.filename)
+            file.save(metadata['path'])
 
             # Save Metadata to SQL
             song = Song(metadata)
-            print('.', song.path, song.title)
             session.add(song)
             session.flush()
             session.commit()
@@ -129,12 +129,12 @@ class SongAPI:
             #    artwork = audio['APIC'] 
             #    # t = {'b64':b64encode(bytes(artwork.data)).decode(), 'mime':artwork.mime}
             #    response[song.album_name]['artwork'] = {'img' : artwork.data, 'mime' : artwork.mime}
-        except OSError:
+        except OSError as e:
             session.rollback()
-            return Response("Error saving file", status=500)
-        except Exception:
+            return Response("Error saving file"+str(e), status=500)
+        except Exception as e:
             session.rollback()
-            return Response("Error saving file", status=500)
+            return Response("Error saving file"+str(e), status=500)
 
         return Response("Success", status=200)
 
