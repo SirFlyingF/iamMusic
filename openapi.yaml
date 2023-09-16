@@ -155,7 +155,7 @@ paths:
                 example: "No Query String"
   
   /playlist:
-      get:
+    get:
       summary: Gets the playlist by playlist_id
       description: Can accespt playlist_id as query_params OR full path. This path describes query. Priority is given to path parameter if both supplied.
       operationId: GetPlaylistQuery
@@ -182,7 +182,6 @@ paths:
                   song:
                     type: array
                     items:
-                      $ref: 
                     description: array of song object
         '400':
           description: invalid request
@@ -190,7 +189,7 @@ paths:
             text/plain:
               schema:
                 type: string
-                example": "No query string"
+                example: "No query string"
         '500':
           description: Internal Server Error
           content:
@@ -198,65 +197,158 @@ paths:
               schema:
                 type: string
                 example: "Internal Server Error"
-      post:
-        summary: Create a playlist
+    post:
+      summary: Create a playlist
+      description: Create a new playlist
+      operationId: AddPlaylist
+      requestBody:
         description: Create a new playlist
-        operationId: AddPlaylist
-        requestBody:
-          description: Create a new playlist
+        content:
+          application/json:
+            schema:
+              required:
+                - songs
+                - name
+              type: object
+              properties:
+                name: 
+                  type: string
+                  description: name of the playlist to be created
+                songs:
+                  type: array
+                  items:
+                  description: array of song_ids
+        required: true
+      responses:
+        '200':
+          description: Successful operation
           content:
             application/json:
               schema:
-                required:
-                  - songs
-                  - name
                 type: object
                 properties:
-                  name: 
-                    type: string
-                    description: name of the playlist to be created
-                  songs:
-                    type: array
-                    items:
-                      $ref: 
-                    description: array of song_ids
-          required: true
-        responses:
-          '200':
-            description: Successful operation
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    playlist_id:
-                      type: integer
-                      description: pk id of the new playlist created
-          '400':
-            description: Invalid request
-            content:
-              text/plain:
-                schema:
-                  type: string
-                  example: "Invalid Request"
-          '409':
-            description: Playlist already exists. Playlist is considered already existig if there is a match on name of the playlist and also the list of songs it contains.
-            content:
-              application/json:
-                schema:
-                  type: integer
-                  description: pk id of the already exisitng playlist
-          '500':
-            description: Unsuccessful Operation
-            content:
-              text/plain:
-                schema:
-                  type: string
-                  example: "Internal Server Error"
+                  playlist_id:
+                    type: integer
+                    description: pk id of the new playlist created
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid Request"
+        '409':
+          description: Playlist already exists. Playlist is considered already existig if there is a match on name of the playlist and also the list of songs it contains.
+          content:
+            application/json:
+              schema:
+                type: integer
+                description: pk id of the already exisitng playlist
+        '500':
+          description: Unsuccessful Operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
     patch:
-    
+      summary: Update a Playlist
+      description: Updates a playlist. Can add or remove songs and rename in one single txn
+      operationId: ModifyPlaylist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: requires atleast one of 'add', 'rmv' or 'nname' keys in request in addition to 'playlist_id'
+              required:
+                - playlist_id
+              properties:
+                nname: 
+                  type: string
+                  description: new name of the playlist
+                add:
+                  type: array
+                  items:
+                    - song_id
+                  description: array of song_ids
+                rmv:
+                  type: array
+                  items:
+                    - song_id
+                  description: array of song_ids
+                playlist_id:
+                  type: integer
+                  description: pk value of playlist to be updated
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Success"
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid Request"
+        '404':
+          description: Playlist with given playlist_id does not exist
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "playlist does not exist"
+        '500':
+          description: Unsuccessful Operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+      
     delete:
-  
+      summary: Deletes a Playlist
+      description: Deletes a playlist
+      operationId: removePlaylist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - playlist_id
+              type: object
+              properties:
+                playlist_id:
+                  type: integer
+                  description: pk value of playlist to be updated
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Success"
+        '400':
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid Request"
+        '500':
+          description: Unsuccessful Operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal Server Error"
+              
   /playlist/{playlist_id}:
     get:
       summary: Gets the playlist by playlist_id
@@ -284,7 +376,7 @@ paths:
                     type: integer
                   song:
                     type: array
-                    $ref: 
+                    items:
                     description: array of song object
         '400':
           description: invalid request
@@ -311,17 +403,17 @@ paths:
       responses:
         '400':
           description: if song_id is not provided. Starts an audio stream otherwise.
-    
+      
   /search/{entity}/{value}:
     get:
       description: Search for an entity. Can be songs, album, artists. Can search by name or 'all' keyword. This path describes path params. Also accepts query params. If both passed, priority given to path.
       operationId: Search
       parameters:
         - entity:
-        in: path
-        type: integer
-        required: true
-        description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
+          in: path
+          type: integer
+          required: true
+          description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
         - value:
           in: path
           type: string
@@ -329,23 +421,24 @@ paths:
           example: 'all'
       responses:
         '200':
-          description: json response structures are different based on entity provided.
-          content:
-            application/json:
-              $ref:
-            applicationjson:
-              $ref:
-            application/json:
-              $ref:
-            application/json:
-              $ref:
+          description: |
+            json response structures are different based on entity provided
+            entity = album
+            resp = {album:[ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]}
+            entity = playlist
+            resp = {'data': [ {name:, playlist_id:} ]}"
+            entity = title
+            resp = {'data': [ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]}
+            entity = artist
+            resp = {song_artist : [ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]
+          
         '400':
           description: invalid request
           content: 
             text/plain:
               schema:
                 type: string
-                example": "Invalid request"
+                example: "Invalid request"
         '500':
           description: Internal Server Error
           content:
@@ -356,13 +449,13 @@ paths:
   /search:
     get:
       description: Search for an entity. Can be songs, album, artists. Can search by name or 'all' keyword. This path describes query params. Also accepts path params. If both passed, priority given to path.
-      operationId: Search
+      operationId: SearchQuery
       parameters:
         - entity:
-        in: query
-        type: integer
-        required: true
-        description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
+          in: query
+          type: integer
+          required: true
+          description: The entity to search for. Can be only one of 'album', 'artist', 'playlist' or song 'title'
         - value:
           in: query
           type: string
@@ -370,23 +463,23 @@ paths:
           example: 'all'
       responses:
         '200':
-          description: json response structures are different based on entity provided.
-          content:
-            application/json:
-              $ref:
-            applicationjson:
-              $ref:
-            application/json:
-              $ref:
-            application/json:
-              $ref:
+          description: |
+            json response structures are different based on entity provided
+            entity = album
+            resp = {album:[ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]}
+            entity = playlist
+            resp = {'data': [ {name:, playlist_id:} ]}"
+            entity = title
+            resp = {'data': [ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]}
+            entity = artist
+            resp = {song_artist : [ {tite:, track_num:, duration:, song_artist:, album_artist, song_id:} ]
         '400':
           description: invalid request
           content: 
             text/plain:
               schema:
                 type: string
-                example": "Invalid request"
+                example: "Invalid request"
         '500':
           description: Internal Server Error
           content:
@@ -394,5 +487,8 @@ paths:
               schema:
                 type: string
                 example: "Internal Server Error"
+    
+    
+  
 components:
   

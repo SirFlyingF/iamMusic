@@ -82,6 +82,6 @@ def DispatchPlaylistAPI(playlist_id=0):
 
 @app.route('/search/<string:entity>/<int:value>', methods=['GET'])
 @app.route('/search', methods=['GET'])
-def DispatchPlaylistAPI(entity=None, value=None):
+def DispatchSearchAPI(entity=None, value=None):
     API = SearchAPI(request)
     return API.Search(entity)

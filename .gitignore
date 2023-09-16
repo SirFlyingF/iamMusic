@@ -1,5 +1,10 @@
 # Ignore MacOS files
-/.DS_store
+/.DS_Store
+.DS_Store
+
+# Ignore pycache
+*__pycache__
+*.pyc
 
 # Ignore Python venv
 venv
