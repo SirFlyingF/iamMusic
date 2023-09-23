@@ -5,9 +5,13 @@ import os
 
 from Commons.BuildDB import builddb
 
+db_host = os.environ['db_host']
+db_user = os.environ['db_user']
+db_port = os.environ['db_port']
+db_name = os.environ['db_name']
 
 # mysql+pymysql://<db_user>:<db_pass>@<db_host>:<db_port>/<db_name>
-engine = create_engine('mysql+pymysql://root:1Madar2chod#@:3306/iammusic')
+engine = create_engine(f'mysql+pymysql://{db_user}:1Madar2chod#@{db_host}:{db_port}/{db_name}')
 
 session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 Base = declarative_base()
