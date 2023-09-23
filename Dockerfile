@@ -3,11 +3,6 @@ FROM python:3.11
 # Allow statements and log messages to immediately appear in the Cloud Run logs
 ENV PYTHONUNBUFFERED 1
 
-# Set variables for gunicorn and GCP Cloud SQL
-ENV db_host="10.66.192.3"
-ENV db_user="root"
-ENV db_port="3306"
-ENV db_name="iammusic"
 
 # Create and change to the app directory.
 WORKDIR /usr/src/app
