@@ -4,7 +4,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from Commons.BuildDB import builddb
 
-engine = create_engine('mysql+pymysql://root:bunny1234@localhost/iammusic')
+# mysql+pymysql://<db_user>:<db_pass>@<db_host>:<db_port>/<db_name>
+engine = create_engine('mysql+pymysql://root:1Madar2chod#@localhost:3306/iammusic')
 
 session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 Base = declarative_base()
@@ -23,3 +24,4 @@ def init_db():
 
 
 #init_db()
+
