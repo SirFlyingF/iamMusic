@@ -3,6 +3,9 @@ FROM python:3.11
 # Allow statements and log messages to immediately appear in the Cloud Run logs
 ENV PYTHONUNBUFFERED 1
 
+# Set variables for gunicorn and GCP Cloud SQL
+ENV PORT=3036
+
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 

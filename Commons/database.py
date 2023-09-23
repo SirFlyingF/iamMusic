@@ -1,11 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+import os
 
 from Commons.BuildDB import builddb
 
+
 # mysql+pymysql://<db_user>:<db_pass>@<db_host>:<db_port>/<db_name>
-engine = create_engine('mysql+pymysql://root:1Madar2chod#@localhost:3306/iammusic')
+engine = create_engine('mysql+pymysql://root:1Madar2chod#@:3306/iammusic')
 
 session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 Base = declarative_base()
@@ -23,5 +25,5 @@ def init_db():
     builddb() #Use this method to insert Foundation data like Super User
 
 
-#init_db()
+init_db()
 
