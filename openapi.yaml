@@ -53,10 +53,12 @@ paths:
         '200':
           description: Successful operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: "Success"
+                type: object
+                properties:
+                  song_id:
+                    type: integer
         '500':
           description: Unsuccessful Operation
           content:
