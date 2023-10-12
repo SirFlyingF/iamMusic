@@ -136,7 +136,7 @@ class SongAPI:
             session.rollback()
             return Response("Error saving file"+str(e), status=500)
 
-        return Response("Success", status=200)
+        return jsonify({"song_id" : song.song_id}), 200
 
 
     # Returns song details by song_id
